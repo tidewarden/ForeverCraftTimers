@@ -2,7 +2,8 @@
 ## Title: ForeverCraftTimers
 ## Notes: Tracks Transmute, Mooncloth and Salt Shaker cooldowns across all your characters.
 ## Author: tidewarden
-## Version: 0.1.0
+## Version: @project-version@
+## X-Curse-Project-ID: 1825110
 ## SavedVariables: ForeverCraftTimersDB
 
 Libs\LibStub\LibStub.lua

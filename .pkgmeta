@@ -1,0 +1,11 @@
+package-as: ForeverCraftTimers
+
+manual-changelog: CHANGELOG.md
+
+ignore:
+  - dev
+  - tests
+  - docs
+  - dist
+  - HANDOFF.md
+  - CHANGELOG.md
