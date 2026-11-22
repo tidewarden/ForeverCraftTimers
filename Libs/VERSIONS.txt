@@ -1,0 +1,1 @@
+LibDBIcon-1.0 (minor 56) and LibDataBroker-1.1: copied by hand from BigWigs' Libs folder, 2026-10-25
