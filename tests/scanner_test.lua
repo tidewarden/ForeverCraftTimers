@@ -89,3 +89,44 @@ T.test("scanner_match_salt_shaker_by_name", function()
     T.eq(S.Match(99999, "Transmute: Iron to Gold").key, "transmute")
     T.eq(S.Match(99999, "Mooncloth").key, "mooncloth")
 end)
+
+T.test("scanner_cast_matches_by_id_in_any_language", function()
+    local g = game()
+    g.names[18560] = "Mondstoff"
+    g.names[17187] = "Transmutieren: Arkanit"
+    local FCT = fresh(g)
+    FCT.Scanner.OnCast(18560)
+    FCT.Scanner.OnCast(17187)
+    local cds = FCT.db.chars["Alc-Realm"].cds
+    assert(cds.mooncloth and cds.transmute)
+    T.eq(cds.mooncloth.guess, true)
+end)
+
+T.test("scanner_reads_recipe_cooldown_when_spell_cooldown_is_empty", function()
+    local g = game()
+    g.known[18560] = true
+    local FCT = fresh(g)
+    _G.C_TradeSkillUI = { GetRecipeCooldown = function(id) if id == 18560 then return 7200, false, 0, 0 end end }
+    FCT.Scanner.Scan()
+    _G.C_TradeSkillUI = nil
+    T.eq(FCT.db.chars["Alc-Realm"].cds.mooncloth.expires, 1000000000 + 7200)
+end)
+
+T.test("scanner_secret_values_are_skipped_not_errors", function()
+    local g = game()
+    g.known[18560] = true
+    local FCT = fresh(g)
+    local SECRET = setmetatable({}, { __lt = function() error("secret compare") end })
+    _G.issecretvalue = function(v) return v == SECRET end
+    _G.C_Spell.GetSpellCooldown = function() return { startTime = SECRET, duration = SECRET } end
+    FCT.Scanner.Scan()
+    FCT.Scanner.OnCast(SECRET)
+    T.eq(FCT.db.chars["Alc-Realm"].cds.mooncloth.expires, 0)
+end)
+
+T.test("scanner_skips_in_combat", function()
+    local FCT = fresh(game())
+    _G.InCombatLockdown = function() return true end
+    FCT.Scanner.Scan()
+    T.eq(FCT.db.chars, nil)
+end)

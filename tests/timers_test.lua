@@ -85,3 +85,20 @@ T.test("timers_forget_by_name", function()
     T.eq(Tm.Forget(FCT.db, "alc"), true)
     T.eq(FCT.db.chars["Alc-Realm"], nil)
 end)
+
+T.test("timers_small_wobble_after_alert_does_not_alert_again", function()
+    local FCT, Tm = fresh()
+    Tm.Record(FCT.db, "A-R", "transmute", 1000, nil, 0)
+    T.eq(#Tm.TakeDue(FCT.db, 1000), 1)
+    Tm.Record(FCT.db, "A-R", "transmute", 1001, nil, 1000) -- a rescan reads one second more
+    T.eq(#Tm.TakeDue(FCT.db, 1002), 0)
+end)
+
+T.test("timers_guess_flag_cleared_by_real_reading", function()
+    local FCT, Tm = fresh()
+    Tm.Record(FCT.db, "A-R", "transmute", 172800, "Arcanite", 0, "guess")
+    T.eq(Tm.Rows(FCT.db, 0, "A-R")[1].cds[1].guess, true)
+    Tm.Record(FCT.db, "A-R", "transmute", 82800, nil, 0)
+    local cd = Tm.Rows(FCT.db, 0, "A-R")[1].cds[1]
+    T.eq(cd.guess, nil); T.eq(cd.remaining, 82800); T.eq(cd.label, "Arcanite")
+end)

@@ -12,11 +12,15 @@ Personal use only: no release workflow, no remote yet.
   on SPELL/BAG_UPDATE_COOLDOWN, and after UNIT_SPELLCAST_SUCCEEDED (which first stores a fallback duration).
 - `Alerts.lua`: `RaidWarningUtil.AddMessage` (Forever: Blizzard_RaidWarning/RaidWarningUtil.lua:28), 15 s ticker.
 - `Launcher.lua`: LDB + LibDBIcon (vendored in `Libs/`, copied from ForeverBossAnalyzer).
-- Slash: `/fct`, `/fct set <transmute|mooncloth|salt> <2d5h|ready>`, `/fct forget <Name>`, `/fct scan`, `/fct test`.
+- Recipe cooldowns also read via `C_TradeSkillUI.GetRecipeCooldown` (Forever Professions UI,
+  Blizzard_Professions.lua:1571) on TRADE_SKILL_SHOW / TRADE_SKILL_LIST_UPDATE.
+- Times use `GetServerTime()` (FCT.Now). Re-reads within 60 s of the stored time don't re-arm alerts.
+- Slash: `/fct`, `/fct debug`, `/fct set <transmute|mooncloth|salt> <2d5h|ready>`, `/fct forget <Name>`, `/fct scan`, `/fct test`.
 
 ## Commands
 - `lua tests/run.lua`
 - `dev/forever/install.sh`, then `/reload`
+- `dev/package.sh` -> `dist/ForeverCraftTimers-<version>.zip` for friends
 
 ## Still to verify in game
 - Does `C_Spell.GetSpellCooldown` report profession cooldowns (Arcanite 17187, Mooncloth 18560) with the

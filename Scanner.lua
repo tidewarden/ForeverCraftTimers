@@ -14,7 +14,8 @@ local function secret(v) return issecretvalue and issecretvalue(v) end
 
 -- Seconds left on a (start, duration) pair from the cooldown APIs, or nil when nothing long is running.
 function Scanner.Remaining(start, duration, nowUptime)
-    if not start or not duration or secret(start) or secret(duration) then return nil end
+    if secret(start) or secret(duration) then return nil end -- check first: even a truth test on a secret errors
+    if type(start) ~= "number" or type(duration) ~= "number" then return nil end
     if duration <= 60 or start == 0 then return nil end -- not running, or just the global cooldown
     if start > nowUptime then start = start - WRAP end
     local left = start + duration - nowUptime
@@ -30,6 +31,18 @@ local function spellCooldown(id)
         return GetSpellCooldown(id)
     end
 end
+
+-- Forever's profession window (retail-style Professions UI) reads recipe cooldowns this way:
+-- Blizzard_ProfessionsTemplates/Blizzard_Professions.lua:1571 on origin/forever. Seconds left, or nil.
+-- Only filled in while the profession's data is loaded, so it is read on TRADE_SKILL_* events too.
+local function recipeCooldown(id)
+    if not (C_TradeSkillUI and C_TradeSkillUI.GetRecipeCooldown) then return nil end
+    local ok, cooldown, _, charges, maxCharges = pcall(C_TradeSkillUI.GetRecipeCooldown, id)
+    if not ok or secret(cooldown) or type(cooldown) ~= "number" or cooldown <= 60 then return nil end
+    if not secret(charges) and type(maxCharges) == "number" and maxCharges > 0 and (charges or 0) > 0 then return nil end
+    return cooldown
+end
+Scanner.recipeCooldown = recipeCooldown
 
 local function itemCooldown(id)
     local fn = (C_Container and C_Container.GetItemCooldown) or (C_Item and C_Item.GetItemCooldown) or GetItemCooldown
@@ -58,8 +71,9 @@ function Scanner.CharKey()
     return UnitName("player") .. "-" .. realm
 end
 
-local function store(def, left, label)
-    T.Record(FCT.db, Scanner.CharKey(), def.key, math.floor(time() + left + 0.5), label, time())
+local function store(def, left, label, source)
+    local now = FCT.Now()
+    T.Record(FCT.db, Scanner.CharKey(), def.key, math.floor(now + left + 0.5), label, now, source)
 end
 
 function Scanner.Scan()
@@ -78,7 +92,7 @@ function Scanner.Scan()
             for _, id in ipairs(def.spells) do
                 if knowsSpell(id) then known = true end
                 local start, duration = spellCooldown(id)
-                local l = Scanner.Remaining(start, duration, up)
+                local l = Scanner.Remaining(start, duration, up) or recipeCooldown(id)
                 if l and (not left or l > left) then left = l end
             end
         end
@@ -88,16 +102,18 @@ function Scanner.Scan()
             T.MarkKnown(FCT.db, charKey, def.key)
         end
     end
+    if FCT.Launcher then FCT.Launcher.Refresh() end
 end
 
 -- Which of our cooldowns a cast belongs to, if any.
 function Scanner.Match(spellID, name)
     for _, def in ipairs(T.DEFS) do
+        -- IDs work in every language; the names catch spells missing from the ID lists (English client).
+        for _, id in ipairs(def.spells) do if id == spellID then return def end end
         if def.namePrefix then
             if name and name:sub(1, #def.namePrefix) == def.namePrefix then return def end
-        else
-            if name == def.name then return def end
-            for _, id in ipairs(def.spells) do if id == spellID then return def end end
+        elseif name == def.name then
+            return def
         end
     end
 end
@@ -108,7 +124,7 @@ function Scanner.OnCast(spellID)
     local def = Scanner.Match(spellID, name)
     if not def then return end
     local label = def.namePrefix and T.LabelFromSpellName(name) or nil
-    store(def, def.fallback, label)
+    store(def, def.fallback, label, "guess")
     C_Timer.After(1, Scanner.Scan) -- replace the guess with the real cooldown once the game has it
     if FCT.Launcher then FCT.Launcher.Refresh() end
 end
@@ -119,4 +135,22 @@ function Scanner.Soon()
     if pending then return end
     pending = true
     C_Timer.After(2, function() pending = false; Scanner.Scan() end)
+end
+
+-- /fct debug: what the game reports for every spell and item we watch, to check the IDs in game.
+function Scanner.Debug()
+    local up = GetTime()
+    for _, def in ipairs(T.DEFS) do
+        if def.item then
+            local start, duration = itemCooldown(def.item)
+            FCT.Print(("%s item %d: owned=%s cd=%s/%s left=%s"):format(def.name, def.item, tostring(ownsItem(def.item)),
+                tostring(start), tostring(duration), tostring(Scanner.Remaining(start, duration, up))))
+        end
+        for _, id in ipairs(def.spells) do
+            local start, duration = spellCooldown(id)
+            FCT.Print(("%s %d %s: known=%s cd=%s/%s left=%s recipe=%s"):format(def.name, id, tostring(spellName(id)),
+                tostring(knowsSpell(id)), tostring(start), tostring(duration),
+                tostring(Scanner.Remaining(start, duration, up)), tostring(recipeCooldown(id))))
+        end
+    end
 end

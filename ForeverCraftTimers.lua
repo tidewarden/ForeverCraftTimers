@@ -12,6 +12,7 @@ local HELP = {
     "/fct forget <Name or Name-Realm> - remove a character",
     "/fct scan - re-read this character's cooldowns",
     "/fct test - show a test alert",
+    "/fct debug - show what the game reports for each watched spell and item",
     "/fct options",
 }
 
@@ -26,7 +27,7 @@ function FCT.Command(msg)
         local key = T.Resolve(which)
         local seconds = amount and (amount:lower() == "ready" and 0 or T.ParseDuration(amount))
         if not key or not seconds then FCT.Print(HELP[2]); return end
-        T.Record(FCT.db, FCT.Scanner.CharKey(), key, time() + seconds, nil, time())
+        T.Record(FCT.db, FCT.Scanner.CharKey(), key, FCT.Now() + seconds, nil, FCT.Now(), "manual")
         FCT.Print(T.BY_KEY[key].name .. ": " .. T.Format(seconds))
         FCT.Launcher.Refresh()
     elseif cmd == "forget" and rest ~= "" then
@@ -37,6 +38,8 @@ function FCT.Command(msg)
         FCT.Launcher.PrintList()
     elseif cmd == "test" then
         FCT.Alerts.Show(FCT.Alerts.Text({ char = FCT.Scanner.CharKey(), cd = "transmute", label = "Arcanite" }))
+    elseif cmd == "debug" then
+        FCT.Scanner.Debug()
     elseif cmd == "options" then
         FCT.Options.Open()
     else
@@ -60,12 +63,13 @@ events:SetScript("OnEvent", function(_, event, a1, _, a3)
         events:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
         events:RegisterEvent("SPELL_UPDATE_COOLDOWN")
         events:RegisterEvent("BAG_UPDATE_COOLDOWN")
+        for _, e in ipairs({ "TRADE_SKILL_SHOW", "TRADE_SKILL_LIST_UPDATE" }) do pcall(events.RegisterEvent, events, e) end
         FCT.Scanner.Scan()
         C_Timer.After(5, FCT.Scanner.Scan) -- profession cooldowns can arrive a moment after login
         FCT.Alerts.Start()
     elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
         FCT.Scanner.OnCast(a3)
-    elseif event == "SPELL_UPDATE_COOLDOWN" or event == "BAG_UPDATE_COOLDOWN" then
+    elseif event == "SPELL_UPDATE_COOLDOWN" or event == "BAG_UPDATE_COOLDOWN" or event:match("^TRADE_SKILL_") then
         FCT.Scanner.Soon()
     end
 end)

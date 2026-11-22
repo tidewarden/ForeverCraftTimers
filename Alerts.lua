@@ -33,12 +33,24 @@ function Alerts.Show(text)
     end
 end
 
+-- The raid warning frame only shows two lines at once, so a pile of alerts (a login after a few days off)
+-- becomes one line plus a count.
+function Alerts.Lines(due)
+    if #due <= 2 then
+        local lines = {}
+        for i, item in ipairs(due) do lines[i] = Alerts.Text(item) end
+        return lines
+    end
+    return { Alerts.Text(due[1]), ("and %d more are ready (see the minimap button)"):format(#due - 1) }
+end
+
 function Alerts.Check()
     if not FCT.db then return end
-    local due = T.TakeDue(FCT.db, time())
+    if InCombatLockdown and InCombatLockdown() then return end -- wait for the fight to end
+    local due = T.TakeDue(FCT.db, FCT.Now())
+    if FCT.Launcher then FCT.Launcher.Refresh() end
     if not FCT.Settings.Get("alerts") then return end
-    for _, item in ipairs(due) do Alerts.Show(Alerts.Text(item)) end
-    if #due > 0 and FCT.Launcher then FCT.Launcher.Refresh() end
+    for _, line in ipairs(Alerts.Lines(due)) do Alerts.Show(line) end
 end
 
 function Alerts.Start()

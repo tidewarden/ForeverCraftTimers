@@ -40,6 +40,14 @@ T.test("addon_login_and_slash_commands", function()
     local all = table.concat(world.printed, "\n")
     assert(all:find("Alc: Transmute 1d 2h"), all)
     assert(all:find("Tailor: Mooncloth"), all)
+    -- Lots due at once: one line plus a count, and nothing while in combat.
+    for _, n in ipairs({ "A", "B", "C" }) do FCT.Timers.Record(FCT.db, n .. "-Realm", "mooncloth", 999999000, nil, 0) end
+    shown = {}
+    _G.InCombatLockdown = function() return true end
+    FCT.Alerts.Check(); T.eq(#shown, 0)
+    _G.InCombatLockdown = function() return false end
+    FCT.Alerts.Check()
+    T.eq(#shown, 2); T.eq(shown[1], "A: Mooncloth is ready"); T.eq(shown[2], "and 2 more are ready (see the minimap button)")
     SlashCmdList.FOREVERCRAFTTIMERS("forget Tailor")
     T.eq(FCT.db.chars["Tailor-Realm"], nil)
 end)

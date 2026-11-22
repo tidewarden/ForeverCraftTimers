@@ -1,7 +1,7 @@
 local _, FCT = ...
 
 -- The saved per-character cooldown records, and the pure logic around them (no game API here, so it is
--- all testable). Times are epoch seconds from time(), so they stay valid across logouts and alts.
+-- all testable). Times are epoch seconds (FCT.Now, server time), so they stay valid across logouts and alts.
 --
 -- FCT.db.chars["Name-Realm"] = {
 --     class = "MAGE",
@@ -11,6 +11,9 @@ local _, FCT = ...
 -- know it has it (knows the recipe, owns the Salt Shaker, or the cooldown was seen running).
 local Timers = {}
 FCT.Timers = Timers
+
+-- Server time, so timers don't move if this PC's clock is wrong. Epoch seconds like time().
+function FCT.Now() return (GetServerTime and GetServerTime()) or time() end
 
 -- Spell and item IDs are the Classic ones. fallback is only used when the game reports no cooldown
 -- right after a cast; the live cooldown always wins once it is readable.
@@ -51,15 +54,21 @@ function Timers.Char(db, charKey, class)
     return c
 end
 
--- A running cooldown was seen (or set by hand). Moving the end time re-arms the alert.
-function Timers.Record(db, charKey, cdKey, expires, label, now)
+-- Readings of the same cooldown wobble by a second or so (two clocks are involved). Only a bigger move is
+-- a new cooldown; a wobble must not re-arm an alert that has just fired.
+Timers.SAME = 60
+
+-- A running cooldown was seen, guessed after a cast (source "guess") or set by hand. A new cooldown re-arms
+-- the alert.
+function Timers.Record(db, charKey, cdKey, expires, label, now, source)
     local c = Timers.Char(db, charKey)
-    local r = c.cds[cdKey] or {}
-    c.cds[cdKey] = r
-    if r.expires ~= expires then
-        r.expires = expires
+    local r = c.cds[cdKey]
+    if not r then r = { expires = 0, notified = true }; c.cds[cdKey] = r end
+    if math.abs((r.expires or 0) - expires) > Timers.SAME then
         r.notified = expires <= now -- setting a cooldown to "ready" by hand shouldn't fire an alert
     end
+    r.expires = expires
+    r.guess = (source == "guess") or nil
     if label then r.label = label end
     return r
 end
@@ -110,7 +119,7 @@ function Timers.Rows(db, now, currentChar)
         for _, def in ipairs(Timers.DEFS) do
             local r = c.cds and c.cds[def.key]
             if r then
-                row.cds[#row.cds + 1] = { key = def.key, name = def.name, label = r.label,
+                row.cds[#row.cds + 1] = { key = def.key, name = def.name, label = r.label, guess = r.guess,
                                           remaining = math.max(0, (r.expires or 0) - now) }
             end
         end

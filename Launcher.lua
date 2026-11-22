@@ -18,10 +18,12 @@ end
 local function cdText(cd)
     local name = cd.name
     if cd.key == "transmute" and cd.label then name = name .. " (" .. cd.label .. ")" end
-    return name, T.Format(cd.remaining)
+    local left = T.Format(cd.remaining)
+    if cd.guess and cd.remaining > 0 then left = "~" .. left end -- from the default length, not read from the game
+    return name, left
 end
 
-local function rows() return T.Rows(FCT.db, time(), FCT.Scanner.CharKey()) end
+local function rows() return T.Rows(FCT.db, FCT.Now(), FCT.Scanner.CharKey()) end
 
 function Launcher.FillTooltip(tooltip)
     tooltip:AddLine("ForeverCraftTimers")
@@ -42,6 +44,7 @@ function Launcher.FillTooltip(tooltip)
         end
     end
     tooltip:AddLine(" ")
+    tooltip:AddLine("~ = estimated; open the profession window to read the real time", 0.6, 0.6, 0.6, true)
     tooltip:AddLine("Left-click: print to chat   Right-click: options", 0.6, 0.6, 0.6)
 end
 
