@@ -14,6 +14,7 @@ Libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
 Settings.lua
 Timers.lua
 Scanner.lua
+Notice.lua
 Alerts.lua
 Launcher.lua
 Widgets.lua

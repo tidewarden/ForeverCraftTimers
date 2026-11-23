@@ -4,8 +4,10 @@ FCT.Settings = Settings
 
 -- Saved in ForeverCraftTimersDB (FCT.db). An unset value means the default.
 local DEFAULTS = {
-    alerts = true,    -- big on-screen text when a cooldown is ready
+    alerts = true,    -- on-screen notice when a cooldown is ready
     minimap = true,   -- show the minimap button
+    x = 0,            -- notice offset from the top centre of the screen
+    y = -290,         -- just below ForeverRealsReminder's spot (-217, 64 tall)
 }
 local LIMITS = {}
 local listeners = {}

@@ -1,12 +1,10 @@
 local _, FCT = ...
 
--- Big centre-screen text when any character's cooldown runs out, on whichever character you're playing.
--- Notified flags are saved, so cooldowns that ran out while you were offline are announced at login.
+-- The on-screen notice (Notice.lua) when any character's cooldown runs out, on whichever character you're
+-- playing. It comes back at every login or /reload while a cooldown is still ready.
 local Alerts = {}
 FCT.Alerts = Alerts
 local T = FCT.Timers
-
-local COLOR = { r = 0.20, g = 1.00, b = 0.40 }
 
 local function shortName(charKey)
     -- Forever reports an empty realm, so keys look like "Suhx-": show just the name then too.
@@ -24,40 +22,52 @@ function Alerts.Text(item)
     local def = T.BY_KEY[item.cd]
     local what = def and def.name or item.cd
     if item.label and item.cd == "transmute" then what = what .. " (" .. item.label .. ")" end
-    return shortName(item.char) .. ": " .. what .. " is ready"
+    return shortName(item.char) .. ": " .. what
 end
 
-function Alerts.Show(text)
-    if RaidWarningUtil and RaidWarningUtil.AddMessage then
-        RaidWarningUtil.AddMessage(text, COLOR, 8)
-    elseif RaidNotice_AddMessage and RaidWarningFrame then
-        RaidNotice_AddMessage(RaidWarningFrame, text, COLOR, 8)
-    else
-        UIErrorsFrame:AddMessage(text, COLOR.r, COLOR.g, COLOR.b)
+Alerts.MAX_LINES = 5
+
+-- What the notice says for a list of ready cooldowns: title, lines, icon.
+function Alerts.Content(ready)
+    local first = T.BY_KEY[ready[1].cd]
+    local title = #ready == 1 and ((first and first.name or ready[1].cd) .. " ready!")
+        or (#ready .. " cooldowns ready!")
+    local lines = {}
+    for i, item in ipairs(ready) do
+        if i == Alerts.MAX_LINES and #ready > Alerts.MAX_LINES then
+            lines[i] = ("and %d more (see the minimap button)"):format(#ready - i + 1)
+            break
+        end
+        lines[i] = Alerts.Text(item)
     end
+    return title, lines, first and first.icon
 end
 
--- The raid warning frame only shows two lines at once, so a pile of alerts (a login after a few days off)
--- becomes one line plus a count.
-function Alerts.Lines(due)
-    if #due <= 2 then
-        local lines = {}
-        for i, item in ipairs(due) do lines[i] = Alerts.Text(item) end
-        return lines
-    end
-    return { Alerts.Text(due[1]), ("and %d more are ready (see the minimap button)"):format(#due - 1) }
+-- Shows every cooldown that is ready right now, or hides the notice when none is.
+function Alerts.ShowReady()
+    local ready = T.Ready(FCT.db, FCT.Now())
+    if #ready == 0 then return false end
+    FCT.Notice.Show(Alerts.Content(ready))
+    return true
 end
 
+-- At login (and every /reload) the notice comes back while anything is still ready. During play it pops up
+-- again when another cooldown runs out. Never in combat: it waits for the fight to end.
+local loginPending = false
 function Alerts.Check()
     if not FCT.db then return end
-    if InCombatLockdown and InCombatLockdown() then return end -- wait for the fight to end
+    if InCombatLockdown and InCombatLockdown() then return end
     local due = T.TakeDue(FCT.db, FCT.Now())
     if FCT.Launcher then FCT.Launcher.Refresh() end
-    if not FCT.Settings.Get("alerts") then return end
-    for _, line in ipairs(Alerts.Lines(due)) do Alerts.Show(line) end
+    local show = loginPending or #due > 0
+    loginPending = false
+    if show and FCT.Settings.Get("alerts") then Alerts.ShowReady() end
 end
 
 function Alerts.Start()
-    C_Timer.After(6, Alerts.Check) -- login: after the loading screen, so the text is seen
+    loginPending = true
+    C_Timer.After(6, Alerts.Check) -- login: after the loading screen, so the notice is seen
     C_Timer.NewTicker(15, Alerts.Check)
 end
+
+FCT.Settings.OnChange(function(key, value) if key == "alerts" and not value then FCT.Notice.Hide() end end)

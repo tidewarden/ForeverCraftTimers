@@ -10,14 +10,16 @@ Unzip into `World of Warcraft/_forever_/Interface/AddOns`, so you get `AddOns/Fo
 - Log in once on each crafter. Cooldowns that are already running are picked up then.
 - Hover the minimap button (clock icon) to see every character's timers. With a minimap addon that groups
   buttons (e.g. EllesmereUI), it's in that addon's button menu.
-- When a cooldown is ready you get big text in the middle of the screen. Ones that came off while you were
-  offline show a few seconds after login. Alerts wait until you're out of combat.
+- When a cooldown is ready, a notice with its icon pops up near the top of the screen for a minute. It comes
+  back at every login or `/reload` while anything is still ready. It waits until you're out of combat.
 - A time with `~` is an estimate made when you cast. Opening the profession window reads the real time.
 
 ## Commands
 - `/fct`: list everything in chat
 - `/fct set mooncloth 2d5h` (or `transmute`, `salt`; `ready`): fix this character's timer by hand
 - `/fct forget Name`: remove a character
+- `/fct unlock`, `/fct lock`: move the notice
+- `/fct test`: show a test notice
 - `/fct debug`: what the game reports, for bug reports
 - `/fct options`: turn the alerts or the minimap button on or off
 

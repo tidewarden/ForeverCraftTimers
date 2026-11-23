@@ -95,6 +95,18 @@ function Timers.TakeDue(db, now)
     return due
 end
 
+-- Every cooldown that is ready right now (announced or not), in the same order as TakeDue.
+function Timers.Ready(db, now)
+    local ready = {}
+    for charKey, c in pairs(chars(db)) do
+        for cdKey, r in pairs(c.cds or {}) do
+            if (r.expires or 0) <= now then ready[#ready + 1] = { char = charKey, cd = cdKey, label = r.label } end
+        end
+    end
+    table.sort(ready, function(a, b) return a.char == b.char and a.cd < b.cd or a.char < b.char end)
+    return ready
+end
+
 function Timers.Forget(db, charKey)
     local all = chars(db)
     if all[charKey] then all[charKey] = nil; return true end

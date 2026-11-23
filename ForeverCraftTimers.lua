@@ -11,7 +11,8 @@ local HELP = {
     "/fct set <transmute|mooncloth|salt> <time|ready> - set this character's timer by hand, e.g. /fct set mooncloth 2d5h",
     "/fct forget <Name or Name-Realm> - remove a character",
     "/fct scan - re-read this character's cooldowns",
-    "/fct test - show a test alert",
+    "/fct test - show a test notice",
+    "/fct unlock / lock - move the notice",
     "/fct debug - show what the game reports for each watched spell and item",
     "/fct options",
 }
@@ -37,7 +38,9 @@ function FCT.Command(msg)
         FCT.Scanner.Scan()
         FCT.Launcher.PrintList()
     elseif cmd == "test" then
-        FCT.Alerts.Show(FCT.Alerts.Text({ char = FCT.Scanner.CharKey(), cd = "transmute", label = "Arcanite" }))
+        FCT.Notice.Show(FCT.Alerts.Content({ { char = FCT.Scanner.CharKey(), cd = "transmute", label = "Arcanite" } }))
+    elseif cmd == "unlock" or cmd == "lock" then
+        if (cmd == "unlock") ~= FCT.Notice.ToggleUnlock() then FCT.Notice.ToggleUnlock() end
     elseif cmd == "debug" then
         FCT.Scanner.Debug()
     elseif cmd == "options" then
