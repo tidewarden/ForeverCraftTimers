@@ -77,13 +77,19 @@ T.test("notice_shows_and_hides_after_a_minute", function()
     local ticks = {}
     _G.C_Timer = { NewTicker = function(_, fn) ticks[#ticks + 1] = fn; return { Cancel = function() end } end,
                    After = function() end }
-    local FCT = require("fake_wow").fresh(T.root, { files = { "Settings.lua", "Notice.lua" } })
+    local FCT, world = require("fake_wow").fresh(T.root, { files = { "Settings.lua", "Notice.lua" } })
     FCT.Notice.Show("Transmute ready!", { "Suhx: Transmute" }, "x")
     T.eq(FCT.Notice.IsShown(), true)
     now = 159; ticks[#ticks]()
     T.eq(FCT.Notice.IsShown(), true)
     now = 160; ticks[#ticks]()
     T.eq(FCT.Notice.IsShown(), false)
+    -- A left-click hides it.
+    _G.GameTooltip = setmetatable({}, { __index = function() return function() end end })
+    FCT.Notice.Show("click", {}, "x")
+    local f; for _, fr in ipairs(world.frames) do if fr._name == "ForeverCraftTimersNotice" then f = fr end end
+    f:GetScript("OnMouseUp")(f, "RightButton"); T.eq(FCT.Notice.IsShown(), true)
+    f:GetScript("OnMouseUp")(f, "LeftButton"); T.eq(FCT.Notice.IsShown(), false)
     FCT.Notice.Show("again", {}, "x"); FCT.Notice.Show("twice", {}, "x")
     T.eq(FCT.Notice.ToggleUnlock(), true); T.eq(FCT.Notice.IsShown(), true)
     T.eq(FCT.Notice.ToggleUnlock(), false); T.eq(FCT.Notice.IsShown(), false)
