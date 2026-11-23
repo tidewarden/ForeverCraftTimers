@@ -130,3 +130,16 @@ T.test("scanner_skips_in_combat", function()
     FCT.Scanner.Scan()
     T.eq(FCT.db.chars, nil)
 end)
+
+-- A recipe the spell APIs don't report as known, but the profession data does: it's ready, so it must
+-- get a record (or no notice would ever show for it).
+T.test("scanner_knows_recipes_from_profession_data", function()
+    local g = game()
+    local FCT = fresh(g)
+    _G.C_TradeSkillUI = { GetRecipeInfo = function(id) if id == 17187 then return { learned = true } end end }
+    FCT.Scanner.Scan()
+    local cds = FCT.db.chars["Alc-Realm"].cds
+    T.eq(cds.transmute.expires, 0)
+    T.eq(cds.mooncloth, nil)
+    _G.C_TradeSkillUI = nil
+end)

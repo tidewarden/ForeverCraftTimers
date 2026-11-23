@@ -54,8 +54,19 @@ local function spellName(id)
     if GetSpellInfo then return (GetSpellInfo(id)) end
 end
 
+-- Profession recipes may not count as player spells, so ask the profession data too: the recipe's
+-- learned flag (TradeSkillUITypesDocumentation.lua:402 on origin/forever). Filled in once the
+-- profession's data is loaded (opening its window), hence the TRADE_SKILL_* rescans.
+local function learnedRecipe(id)
+    if not (C_TradeSkillUI and C_TradeSkillUI.GetRecipeInfo) then return false end
+    local ok, info = pcall(C_TradeSkillUI.GetRecipeInfo, id)
+    if not ok or secret(info) or type(info) ~= "table" or secret(info.learned) then return false end
+    return info.learned == true
+end
+
 local function knowsSpell(id)
     if IsPlayerSpell and IsPlayerSpell(id) then return true end
+    if learnedRecipe(id) then return true end
     if C_SpellBook and C_SpellBook.IsSpellKnown and C_SpellBook.IsSpellKnown(id) then return true end
     if IsSpellKnown and IsSpellKnown(id) then return true end
     return false
