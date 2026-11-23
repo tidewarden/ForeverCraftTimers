@@ -13,8 +13,10 @@ local function shortName(charKey)
     local name, realm = charKey:match("^(.-)%-(.*)$")
     if not name then return charKey end
     local mine = GetNormalizedRealmName and GetNormalizedRealmName()
-    if realm == "" or realm == mine then return name end
-    return charKey
+    local c = FCT.db and FCT.db.chars and FCT.db.chars[charKey]
+    local full = (c and c.surname) and (name .. " " .. c.surname) or name
+    if realm == "" or realm == mine then return full end
+    return full .. "-" .. realm
 end
 Alerts.ShortName = shortName
 

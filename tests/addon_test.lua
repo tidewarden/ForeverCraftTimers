@@ -59,4 +59,6 @@ T.test("short_name_drops_empty_realm", function()
     T.eq(FCT.Alerts.ShortName("Suhx-"), "Suhx")
     T.eq(FCT.Alerts.ShortName("Log-Realm"), "Log")
     T.eq(FCT.Alerts.ShortName("Alt-Other"), "Alt-Other")
+    FCT.db = { chars = { ["Suhx-"] = { surname = "Stormhide", cds = {} } } }
+    T.eq(FCT.Alerts.ShortName("Suhx-"), "Suhx Stormhide")
 end)

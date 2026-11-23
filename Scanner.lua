@@ -80,7 +80,10 @@ function Scanner.Scan()
     if not FCT.db or (InCombatLockdown and InCombatLockdown()) then return end
     local _, class = UnitClass("player")
     local charKey = Scanner.CharKey()
-    T.Char(FCT.db, charKey, class)
+    local c = T.Char(FCT.db, charKey, class)
+    -- Forever characters can have a surname: UnitName's second return (Blizzard_CombatAudioAlertManager.lua:1259).
+    local _, surname = UnitName("player")
+    if not secret(surname) and type(surname) == "string" then c.surname = surname ~= "" and surname or nil end
     local up = GetTime()
     for _, def in ipairs(T.DEFS) do
         local left, known
