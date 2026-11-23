@@ -9,10 +9,12 @@ local T = FCT.Timers
 local COLOR = { r = 0.20, g = 1.00, b = 0.40 }
 
 local function shortName(charKey)
-    local name, realm = charKey:match("^(.-)%-(.+)$")
+    -- Forever reports an empty realm, so keys look like "Suhx-": show just the name then too.
+    local name, realm = charKey:match("^(.-)%-(.*)$")
     if not name then return charKey end
     local mine = GetNormalizedRealmName and GetNormalizedRealmName()
-    return (realm == mine) and name or charKey
+    if realm == "" or realm == mine then return name end
+    return charKey
 end
 Alerts.ShortName = shortName
 

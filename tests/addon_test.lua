@@ -51,3 +51,12 @@ T.test("addon_login_and_slash_commands", function()
     SlashCmdList.FOREVERCRAFTTIMERS("forget Tailor")
     T.eq(FCT.db.chars["Tailor-Realm"], nil)
 end)
+
+-- Forever reports an empty realm, so keys end in "-": the dash must not show.
+T.test("short_name_drops_empty_realm", function()
+    local FCT = require("fake_wow").fresh(T.root, { files = { "Timers.lua", "Alerts.lua" } })
+    _G.GetNormalizedRealmName = function() return "Realm" end
+    T.eq(FCT.Alerts.ShortName("Suhx-"), "Suhx")
+    T.eq(FCT.Alerts.ShortName("Log-Realm"), "Log")
+    T.eq(FCT.Alerts.ShortName("Alt-Other"), "Alt-Other")
+end)
