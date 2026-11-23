@@ -43,9 +43,6 @@ function Launcher.FillTooltip(tooltip)
             end
         end
     end
-    tooltip:AddLine(" ")
-    tooltip:AddLine("~ = estimated; open the profession window to read the real time", 0.6, 0.6, 0.6, true)
-    tooltip:AddLine("Left-click: print to chat   Right-click: options", 0.6, 0.6, 0.6)
 end
 
 function Launcher.PrintList()
