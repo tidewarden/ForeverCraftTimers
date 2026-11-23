@@ -7,7 +7,7 @@ local DEFAULTS = {
     alerts = true,    -- on-screen notice when a cooldown is ready
     minimap = true,   -- show the minimap button
     x = 0,            -- notice offset from the top centre of the screen
-    y = -290,         -- just below ForeverRealsReminder's spot (-217, 64 tall)
+    y = -217,         -- same height as ForeverRealsReminder
 }
 local LIMITS = {}
 local listeners = {}
