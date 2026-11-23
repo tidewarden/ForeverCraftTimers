@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.3
+- Left-click the notice to hide it (hover it for a reminder).
+- The notice sits at the same height as ForeverRealsReminder's.
+- Recipes are also recognised from the profession window, so a transmute that's already ready gets a timer
+  (open your alchemy window once).
+
 ## v0.1.2
 - New ready notice: the cooldown's icon near the top of the screen with a line per character, like a WeakAura.
   It hides after a minute and comes back at every login or /reload while something is still ready.
